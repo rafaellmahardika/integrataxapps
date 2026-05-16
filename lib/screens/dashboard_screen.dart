@@ -9,7 +9,7 @@ import '../core/theme.dart';
 import '../models/data_source.dart' hide DashboardState;
 import '../providers/dashboard_provider.dart';
 import '../widgets/status_card.dart';
-import '../widgets/performance_chart.dart'; // Pastikan file grafikmu ada di sini
+import '../widgets/performance_chart.dart'; 
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -273,11 +273,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           const SizedBox(height: 24),
           if (state.performanceData.isNotEmpty)
             SizedBox(
-              // Hapus kata 'const' di sini
               height: 160,
               child: PerformanceChart(
                 data: state.performanceData,
-              ), // Masukkan datanya di sini
+              ),
             )
           else
             const SizedBox(
@@ -310,14 +309,17 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           ),
         ],
       ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          _buildNavItem(Icons.home_rounded, 'Dashboard', true),
-          _buildNavItem(Icons.notifications_rounded, 'Notifikasi', false),
-          _buildNavItem(Icons.check_rounded, 'Approval', false),
-          _buildNavItem(Icons.format_list_bulleted_rounded, 'Log', false),
-        ],
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            _buildNavItem(Icons.home_rounded, 'Dashboard', true),
+            _buildNavItem(Icons.notifications_rounded, 'Notifikasi', false),
+            _buildNavItem(Icons.check_rounded, 'Approval', false),
+            _buildNavItem(Icons.format_list_bulleted_rounded, 'Log', false),
+          ],
+        ),
       ),
     );
   }
