@@ -6,7 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../core/theme.dart';
-import '../models/data_source.dart' hide DashboardState;
+import '../models/data_source.dart';
 import '../providers/auth_provider.dart';
 import '../providers/dashboard_provider.dart';
 import '../widgets/status_card.dart';
@@ -25,6 +25,7 @@ class DashboardScreen extends ConsumerStatefulWidget {
 }
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
+  static const _enableDevTools = bool.fromEnvironment('ENABLE_DEV_TOOLS');
   int _selectedIndex = 0;
 
   Future<void> _onRefresh() async {
@@ -103,15 +104,42 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 Padding(
                   padding: const EdgeInsets.only(top: 10, bottom: 24),
                   child: Center(
-                    child: Text(
-                      'INTEGRATAX.',
-                      style: GoogleFonts.barlow(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w900,
-                        fontStyle: FontStyle.italic,
-                        color: Colors.white,
-                        letterSpacing: 1.5,
-                      ),
+                    child: Column(
+                      children: [
+                        Text(
+                          'INTEGRATAX.',
+                          style: GoogleFonts.barlow(
+                            fontSize: 24,
+                            fontWeight: FontWeight.w900,
+                            fontStyle: FontStyle.italic,
+                            color: Colors.white,
+                            letterSpacing: 1.5,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.16),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                              color: Colors.white.withValues(alpha: 0.35),
+                            ),
+                          ),
+                          child: Text(
+                            'MODE DEMO',
+                            style: GoogleFonts.inter(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              color: Colors.white,
+                              letterSpacing: 1.1,
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -139,14 +167,15 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                           ),
                         ),
                       ),
-                      IconButton(
-                        tooltip: 'SIMPBB Explorer',
-                        onPressed: _openSimpbbExplorer,
-                        icon: const Icon(
-                          Icons.api_rounded,
-                          color: Colors.white,
+                      if (_enableDevTools)
+                        IconButton(
+                          tooltip: 'SIMPBB Explorer',
+                          onPressed: _openSimpbbExplorer,
+                          icon: const Icon(
+                            Icons.api_rounded,
+                            color: Colors.white,
+                          ),
                         ),
-                      ),
                       IconButton(
                         tooltip: 'Logout',
                         onPressed: () =>

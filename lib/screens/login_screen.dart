@@ -46,7 +46,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             ),
             const SizedBox(height: 8),
             Text(
-              'Login dummy untuk Administrator IT Bapenda.',
+              'Masuk sebagai Administrator IT Bapenda untuk membuka dashboard monitoring.',
               style: AppTypography.bodyMedium(context),
             ),
             const SizedBox(height: 34),
@@ -103,7 +103,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             ),
             const SizedBox(height: 18),
             Text(
-              'Mode dummy: email dan password bebas, tidak tersambung JWT/backend.',
+              'Mode demo: aplikasi menggunakan lingkungan simulasi untuk kebutuhan evaluasi.',
               style: AppTypography.dataSmall(context),
             ),
           ],

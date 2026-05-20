@@ -63,7 +63,7 @@ class DashboardNotifier extends StateNotifier<DashboardState> {
       // Simulasi delay jaringan selama 1.2 detik agar animasi loading di UI terlihat
       await Future.delayed(const Duration(milliseconds: 1200));
 
-      // TODO: Bagian ini siap diganti dengan http.post() saat server API sudah normal kembali.
+      // TODO: Replace with DashboardRepository backed by the IntegraTax middleware.
 
       // Mengambil data tiruan
       final sources = _buildDummyDataSources();
