@@ -1,6 +1,5 @@
 // Basic Flutter widget test for IntegraTax.
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
@@ -12,10 +11,18 @@ void main() {
     // Sama seperti di main.dart, kita wajib membungkusnya dengan ProviderScope
     await tester.pumpWidget(const ProviderScope(child: IntegraTaxApp()));
 
-    // Memastikan teks placeholder yang kita buat di main.dart muncul di layar
-    expect(
-      find.textContaining('Mesin IntegraTax sudah menyala!'),
-      findsOneWidget,
-    );
+    await tester.pump(const Duration(milliseconds: 1300));
+
+    expect(find.text('INTEGRATAX.'), findsOneWidget);
+    expect(find.text('Masuk Dashboard'), findsOneWidget);
+
+    await tester.tap(find.text('Masuk Dashboard'));
+    await tester.pump(const Duration(milliseconds: 700));
+    await tester.pump(const Duration(milliseconds: 1300));
+
+    expect(find.text('Dashboard'), findsOneWidget);
+    expect(find.text('Notifikasi'), findsOneWidget);
+    expect(find.text('Approval'), findsOneWidget);
+    expect(find.text('Log'), findsOneWidget);
   });
 }
