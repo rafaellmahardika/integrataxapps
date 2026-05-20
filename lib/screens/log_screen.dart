@@ -6,12 +6,22 @@ import '../core/theme.dart';
 import '../models/sync_log.dart';
 import '../providers/mock_data_provider.dart';
 
-class LogScreen extends ConsumerWidget {
+class LogScreen extends ConsumerStatefulWidget {
   const LogScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final logs = ref.watch(syncLogsProvider);
+  ConsumerState<LogScreen> createState() => _LogScreenState();
+}
+
+class _LogScreenState extends ConsumerState<LogScreen> {
+  SyncLogStatus? _selectedStatus;
+
+  @override
+  Widget build(BuildContext context) {
+    final allLogs = ref.watch(syncLogsProvider);
+    final logs = _selectedStatus == null
+        ? allLogs
+        : allLogs.where((log) => log.status == _selectedStatus).toList();
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 78, 20, 120),
@@ -30,17 +40,41 @@ class LogScreen extends ConsumerWidget {
           style: AppTypography.bodyMedium(context),
         ),
         const SizedBox(height: 18),
-        const Row(
+        Row(
           children: [
-            _FilterChip(label: 'Semua', selected: true),
-            SizedBox(width: 8),
-            _FilterChip(label: 'Gagal'),
-            SizedBox(width: 8),
-            _FilterChip(label: 'Review'),
+            _FilterChip(
+              label: 'Semua',
+              selected: _selectedStatus == null,
+              onTap: () => setState(() => _selectedStatus = null),
+            ),
+            const SizedBox(width: 8),
+            _FilterChip(
+              label: 'Gagal',
+              selected: _selectedStatus == SyncLogStatus.failed,
+              onTap: () =>
+                  setState(() => _selectedStatus = SyncLogStatus.failed),
+            ),
+            const SizedBox(width: 8),
+            _FilterChip(
+              label: 'Review',
+              selected: _selectedStatus == SyncLogStatus.review,
+              onTap: () =>
+                  setState(() => _selectedStatus = SyncLogStatus.review),
+            ),
           ],
         ),
         const SizedBox(height: 18),
-        ...logs.map((log) => _LogCard(item: log)),
+        if (logs.isEmpty)
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: AppDecorations.card(),
+            child: Text(
+              'Tidak ada log untuk filter ini.',
+              style: AppTypography.bodyMedium(context),
+            ),
+          )
+        else
+          ...logs.map((log) => _LogCard(item: log)),
       ],
     );
   }
@@ -49,26 +83,34 @@ class LogScreen extends ConsumerWidget {
 class _FilterChip extends StatelessWidget {
   final String label;
   final bool selected;
+  final VoidCallback onTap;
 
-  const _FilterChip({required this.label, this.selected = false});
+  const _FilterChip({
+    required this.label,
+    required this.onTap,
+    this.selected = false,
+  });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      decoration: BoxDecoration(
-        color: selected ? AppColors.primary : AppColors.bgInput,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: selected ? AppColors.primary : AppColors.borderNormal,
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.primary : AppColors.bgInput,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: selected ? AppColors.primary : AppColors.borderNormal,
+          ),
         ),
-      ),
-      child: Text(
-        label,
-        style: GoogleFonts.inter(
-          fontSize: 12,
-          fontWeight: FontWeight.w700,
-          color: selected ? Colors.white : AppColors.textSecondary,
+        child: Text(
+          label,
+          style: GoogleFonts.inter(
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+            color: selected ? Colors.white : AppColors.textSecondary,
+          ),
         ),
       ),
     );

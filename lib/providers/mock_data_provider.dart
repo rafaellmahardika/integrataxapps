@@ -34,7 +34,44 @@ final notificationsProvider = Provider<List<AppNotification>>((ref) {
   ];
 });
 
-final approvalRequestsProvider = Provider<List<ApprovalRequest>>((ref) {
+final approvalRequestsProvider =
+    StateNotifierProvider<ApprovalRequestsNotifier, List<ApprovalRequest>>(
+      (ref) => ApprovalRequestsNotifier(),
+    );
+
+class ApprovalRequestsNotifier extends StateNotifier<List<ApprovalRequest>> {
+  ApprovalRequestsNotifier() : super(_buildInitialApprovalRequests());
+
+  void approve(String id) {
+    state = [
+      for (final request in state)
+        if (request.id == id)
+          request.copyWith(
+            status: ApprovalStatus.approved,
+            decidedAt: DateTime.now(),
+            decisionNote: 'Disetujui melalui mode demo.',
+          )
+        else
+          request,
+    ];
+  }
+
+  void reject(String id, String reason) {
+    state = [
+      for (final request in state)
+        if (request.id == id)
+          request.copyWith(
+            status: ApprovalStatus.rejected,
+            decidedAt: DateTime.now(),
+            decisionNote: reason,
+          )
+        else
+          request,
+    ];
+  }
+}
+
+List<ApprovalRequest> _buildInitialApprovalRequests() {
   final now = DateTime.now();
   return [
     ApprovalRequest(
@@ -61,7 +98,7 @@ final approvalRequestsProvider = Provider<List<ApprovalRequest>>((ref) {
           'Memperbarui relasi NIK wajib pajak yang belum tervalidasi.',
     ),
   ];
-});
+}
 
 final syncLogsProvider = Provider<List<SyncLog>>((ref) {
   final now = DateTime.now();

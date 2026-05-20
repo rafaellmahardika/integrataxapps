@@ -8,6 +8,8 @@ class ApprovalRequest {
   final ApprovalStatus status;
   final DateTime requestedAt;
   final String impactSummary;
+  final DateTime? decidedAt;
+  final String? decisionNote;
 
   const ApprovalRequest({
     required this.id,
@@ -19,7 +21,29 @@ class ApprovalRequest {
     required this.status,
     required this.requestedAt,
     required this.impactSummary,
+    this.decidedAt,
+    this.decisionNote,
   });
+
+  ApprovalRequest copyWith({
+    ApprovalStatus? status,
+    DateTime? decidedAt,
+    String? decisionNote,
+  }) {
+    return ApprovalRequest(
+      id: id,
+      title: title,
+      sourceName: sourceName,
+      operationType: operationType,
+      affectedRecords: affectedRecords,
+      priority: priority,
+      status: status ?? this.status,
+      requestedAt: requestedAt,
+      impactSummary: impactSummary,
+      decidedAt: decidedAt ?? this.decidedAt,
+      decisionNote: decisionNote ?? this.decisionNote,
+    );
+  }
 }
 
 enum ApprovalPriority { low, medium, high }
