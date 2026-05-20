@@ -7,9 +7,15 @@ import 'package:google_fonts/google_fonts.dart';
 
 import '../core/theme.dart';
 import '../models/data_source.dart' hide DashboardState;
+import '../providers/auth_provider.dart';
 import '../providers/dashboard_provider.dart';
 import '../widgets/status_card.dart';
-import '../widgets/performance_chart.dart'; 
+import '../widgets/performance_chart.dart';
+import 'approval_screen.dart';
+import 'log_screen.dart';
+import 'notification_screen.dart';
+import 'simpbb_explorer_screen.dart';
+import 'source_detail_screen.dart';
 
 class DashboardScreen extends ConsumerStatefulWidget {
   const DashboardScreen({super.key});
@@ -19,6 +25,8 @@ class DashboardScreen extends ConsumerStatefulWidget {
 }
 
 class _DashboardScreenState extends ConsumerState<DashboardScreen> {
+  int _selectedIndex = 0;
+
   Future<void> _onRefresh() async {
     HapticFeedback.mediumImpact();
     await ref.read(dashboardProvider.notifier).refresh();
@@ -60,106 +68,9 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           // ── 2. KONTEN UTAMA (SCROLLABLE) ──
           SafeArea(
             bottom: false,
-            child: RefreshIndicator(
-              onRefresh: _onRefresh,
-              color: const Color(0xFF00C689),
-              backgroundColor: AppColors.bgSurface,
-              child: state.isLoading && state.dataSources.isEmpty
-                  ? const Center(
-                      child: CircularProgressIndicator(
-                        color: Color(0xFF00C689),
-                      ),
-                    )
-                  : ListView(
-                      padding: const EdgeInsets.only(
-                        bottom: 120,
-                      ), // Ruang lega untuk Bottom Nav
-                      physics: const AlwaysScrollableScrollPhysics(),
-                      children: [
-                        // LOGO INTEGRATAX
-                        Padding(
-                          padding: const EdgeInsets.only(top: 10, bottom: 24),
-                          child: Center(
-                            child: Text(
-                              'INTEGRATAX.',
-                              style: GoogleFonts.barlow(
-                                fontSize: 24,
-                                fontWeight: FontWeight.w900,
-                                fontStyle: FontStyle.italic,
-                                color: Colors.white,
-                                letterSpacing: 1.5,
-                              ),
-                            ),
-                          ),
-                        ),
-
-                        // GREETING TEXT
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          child: Text.rich(
-                            TextSpan(
-                              text: 'Halo, ',
-                              style: GoogleFonts.inter(
-                                fontSize: 22,
-                                color: Colors.white,
-                                fontWeight: FontWeight.w400,
-                              ),
-                              children: [
-                                TextSpan(
-                                  text: 'Davi Ezra!',
-                                  style: GoogleFonts.inter(
-                                    fontWeight: FontWeight.w700,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-
-                        // RINGKASAN STATISTIK
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          child: _buildStatsRow(state),
-                        ),
-                        const SizedBox(height: 32),
-
-                        // JUDUL BAGIAN STATUS
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          child: Text(
-                            'Status',
-                            style: GoogleFonts.inter(
-                              fontSize: 18,
-                              fontWeight: FontWeight.w600,
-                              color: AppColors.textSecondary,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-
-                        // DAFTAR KARTU SUMBER DATA
-                        ...state.dataSources.map(
-                          (source) => Padding(
-                            padding: const EdgeInsets.only(
-                              left: 20,
-                              right: 20,
-                              bottom: 16,
-                            ),
-                            child: StatusCard(source: source),
-                          ),
-                        ),
-
-                        const SizedBox(height: 16),
-
-                        // KARTU GRAFIK PERFORMA
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 20),
-                          child: _buildChartSection(state),
-                        ),
-                      ],
-                    ),
-            ),
+            child: _selectedIndex == 0
+                ? _buildDashboardTab(state)
+                : _buildSelectedTab(),
           ),
 
           // ── 3. CUSTOM BOTTOM NAVIGATION BAR ──
@@ -175,6 +86,146 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   }
 
   // ─── WIDGET BANTUAN ────────────────────────────────────────────────────────
+
+  Widget _buildDashboardTab(DashboardState state) {
+    return RefreshIndicator(
+      onRefresh: _onRefresh,
+      color: const Color(0xFF00C689),
+      backgroundColor: AppColors.bgSurface,
+      child: state.isLoading && state.dataSources.isEmpty
+          ? const Center(
+              child: CircularProgressIndicator(color: Color(0xFF00C689)),
+            )
+          : ListView(
+              padding: const EdgeInsets.only(bottom: 120),
+              physics: const AlwaysScrollableScrollPhysics(),
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(top: 10, bottom: 24),
+                  child: Center(
+                    child: Text(
+                      'INTEGRATAX.',
+                      style: GoogleFonts.barlow(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w900,
+                        fontStyle: FontStyle.italic,
+                        color: Colors.white,
+                        letterSpacing: 1.5,
+                      ),
+                    ),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Text.rich(
+                          TextSpan(
+                            text: 'Halo, ',
+                            style: GoogleFonts.inter(
+                              fontSize: 22,
+                              color: Colors.white,
+                              fontWeight: FontWeight.w400,
+                            ),
+                            children: [
+                              TextSpan(
+                                text: 'Admin!',
+                                style: GoogleFonts.inter(
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        tooltip: 'SIMPBB Explorer',
+                        onPressed: _openSimpbbExplorer,
+                        icon: const Icon(
+                          Icons.api_rounded,
+                          color: Colors.white,
+                        ),
+                      ),
+                      IconButton(
+                        tooltip: 'Logout',
+                        onPressed: () =>
+                            ref.read(authProvider.notifier).logout(),
+                        icon: const Icon(
+                          Icons.logout_rounded,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: _buildStatsRow(state),
+                ),
+                const SizedBox(height: 32),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Text(
+                    'Status',
+                    style: GoogleFonts.inter(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ...state.dataSources.map(
+                  (source) => Padding(
+                    padding: const EdgeInsets.only(
+                      left: 20,
+                      right: 20,
+                      bottom: 16,
+                    ),
+                    child: StatusCard(
+                      source: source,
+                      onTap: () => _openSourceDetail(source),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: _buildChartSection(state),
+                ),
+              ],
+            ),
+    );
+  }
+
+  Widget _buildSelectedTab() {
+    switch (_selectedIndex) {
+      case 1:
+        return const NotificationScreen();
+      case 2:
+        return const ApprovalScreen();
+      case 3:
+        return const LogScreen();
+      default:
+        return const SizedBox.shrink();
+    }
+  }
+
+  void _openSourceDetail(DataSource source) {
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (context) => SourceDetailScreen(source: source),
+      ),
+    );
+  }
+
+  void _openSimpbbExplorer() {
+    Navigator.of(context).push(
+      MaterialPageRoute(builder: (context) => const SimpbbExplorerScreen()),
+    );
+  }
 
   /// Membangun baris kotak statistik (Sumber Aktif, Error Aktif, Terakhir Update)
   Widget _buildStatsRow(DashboardState state) {
@@ -274,9 +325,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           if (state.performanceData.isNotEmpty)
             SizedBox(
               height: 160,
-              child: PerformanceChart(
-                data: state.performanceData,
-              ),
+              child: PerformanceChart(data: state.performanceData),
             )
           else
             const SizedBox(
@@ -314,43 +363,47 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
         child: Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            _buildNavItem(Icons.home_rounded, 'Dashboard', true),
-            _buildNavItem(Icons.notifications_rounded, 'Notifikasi', false),
-            _buildNavItem(Icons.check_rounded, 'Approval', false),
-            _buildNavItem(Icons.format_list_bulleted_rounded, 'Log', false),
+            _buildNavItem(Icons.home_rounded, 'Dashboard', 0),
+            _buildNavItem(Icons.notifications_rounded, 'Notifikasi', 1),
+            _buildNavItem(Icons.check_rounded, 'Approval', 2),
+            _buildNavItem(Icons.format_list_bulleted_rounded, 'Log', 3),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildNavItem(IconData icon, String label, bool isSelected) {
+  Widget _buildNavItem(IconData icon, String label, int index) {
+    final isSelected = _selectedIndex == index;
     const unselectedColor = Color(0xFF02543B); // Hijau sangat gelap
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-      decoration: isSelected
-          ? BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(30),
-            )
-          : null,
-      child: Row(
-        children: [
-          Icon(
-            icon,
-            size: 18,
-            color: isSelected ? const Color(0xFF00C689) : unselectedColor,
-          ),
-          const SizedBox(width: 6),
-          Text(
-            label,
-            style: GoogleFonts.inter(
-              fontSize: 12,
-              fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+    return GestureDetector(
+      onTap: () => setState(() => _selectedIndex = index),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        decoration: isSelected
+            ? BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(30),
+              )
+            : null,
+        child: Row(
+          children: [
+            Icon(
+              icon,
+              size: 18,
               color: isSelected ? const Color(0xFF00C689) : unselectedColor,
             ),
-          ),
-        ],
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: GoogleFonts.inter(
+                fontSize: 12,
+                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                color: isSelected ? const Color(0xFF00C689) : unselectedColor,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
