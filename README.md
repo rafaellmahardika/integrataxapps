@@ -19,11 +19,12 @@ IntegraTax adalah aplikasi mobile Flutter untuk memantau sinkronisasi data Pajak
 - Halaman detail sumber data saat card status diklik.
 - Login dummy untuk simulasi autentikasi administrator.
 - Provider dummy untuk Notifikasi, Approval, dan Log agar mudah diganti backend/API.
-- SIMPBB Explorer untuk mencoba endpoint publik SIMPBB API.
+- Middleware Node.js minimal untuk mem-proxy request SIMPBB API.
+- Halaman Objek Pajak SIMPBB untuk pencarian WP/NOP melalui middleware.
 
 ## Integrasi SIMPBB API
 
-Base URL:
+Base URL upstream SIMPBB:
 
 ```text
 https://simpbb.technosmart.id/api/rpc
@@ -39,13 +40,14 @@ Semua request mengikuti format oRPC:
 }
 ```
 
-Endpoint yang sudah disiapkan di SIMPBB Explorer:
+Endpoint middleware yang sudah tersedia:
 
-- `/wilayah/listPropinsi`
-- `/objekPajak/search`
-- `/objekPajak/listDetails`
+- `GET /health`
+- `POST /api/simpbb/search`
+- `POST /api/simpbb/list-details`
+- `POST /api/simpbb/proxy` untuk endpoint oRPC yang diizinkan
 
-Catatan: dashboard sinkronisasi BPN, Disdukcapil, dan BPJS masih menggunakan dummy data karena endpoint status sinkronisasi real-time belum tersedia di dokumentasi API.
+Catatan: dashboard sinkronisasi BPN, Disdukcapil, dan BPJS masih menggunakan dummy data karena endpoint status sinkronisasi real-time belum tersedia di dokumentasi API. Integrasi SIMPBB saat ini difokuskan untuk pencarian objek pajak dan list detail melalui middleware.
 
 ## Tech Stack
 
@@ -55,23 +57,26 @@ Catatan: dashboard sinkronisasi BPN, Disdukcapil, dan BPJS masih menggunakan dum
 - `http` untuk request API
 - `fl_chart` untuk grafik
 - `google_fonts` untuk typography
+- Node.js + Express untuk middleware awal
 
 ## Struktur Utama
 
 ```text
 lib/
   core/
-    api_client.dart
+    backend_client.dart
     theme.dart
   models/
     app_notification.dart
     approval_request.dart
     data_source.dart
+    objek_pajak.dart
     sync_log.dart
   providers/
     auth_provider.dart
     dashboard_provider.dart
     mock_data_provider.dart
+    simpbb_provider.dart
   screens/
     app_gate.dart
     dashboard_screen.dart
@@ -84,20 +89,53 @@ lib/
   widgets/
     performance_chart.dart
     status_card.dart
+backend/
+  package.json
+  src/server.js
 ```
 
 ## Cara Menjalankan
 
-Install dependency:
+Install dependency Flutter:
 
 ```bash
 flutter pub get
+```
+
+Install dependency backend:
+
+```bash
+npm install --prefix backend
+```
+
+Jalankan middleware:
+
+```bash
+npm run dev --prefix backend
+```
+
+Middleware default berjalan di:
+
+```text
+http://localhost:3000
 ```
 
 Run di Chrome:
 
 ```bash
 flutter run -d chrome
+```
+
+Jika backend berjalan di URL lain:
+
+```bash
+flutter run -d chrome --dart-define=INTEGRATAX_API_BASE_URL=http://localhost:3000
+```
+
+Tampilkan tombol Objek Pajak SIMPBB/dev tool di dashboard:
+
+```bash
+flutter run -d chrome --dart-define=ENABLE_DEV_TOOLS=true
 ```
 
 Run di Linux desktop:
@@ -140,12 +178,12 @@ Sudah tersedia:
 - Login dummy.
 - Tab Notifikasi, Approval, dan Log.
 - Source Detail.
-- SIMPBB Explorer untuk endpoint publik.
+- Middleware Node.js minimal.
+- Halaman Objek Pajak SIMPBB via middleware.
 - Model dan provider dummy yang siap diganti backend.
 
 Belum tersedia:
 
-- Backend middleware Node.js.
 - Login JWT sebenarnya.
 - WebSocket real-time.
 - Firebase Cloud Messaging.
