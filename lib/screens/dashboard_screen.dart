@@ -6,12 +6,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import '../core/theme.dart';
+import '../models/approval_request.dart';
 import '../models/data_source.dart';
 import '../providers/auth_provider.dart';
 import '../providers/dashboard_provider.dart';
+import '../providers/mock_data_provider.dart';
 import '../widgets/status_card.dart';
 import '../widgets/performance_chart.dart';
 import 'approval_screen.dart';
+import 'error_page.dart';
 import 'log_screen.dart';
 import 'notification_screen.dart';
 import 'simpbb_explorer_screen.dart';
@@ -37,6 +40,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   Widget build(BuildContext context) {
     // Memantau data dari state management Riverpod
     final state = ref.watch(dashboardProvider);
+    final approvals = ref.watch(approvalRequestsProvider);
 
     return Scaffold(
       backgroundColor:
@@ -70,7 +74,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
           SafeArea(
             bottom: false,
             child: _selectedIndex == 0
-                ? _buildDashboardTab(state)
+                ? _buildDashboardTab(state, approvals)
                 : _buildSelectedTab(),
           ),
 
@@ -88,7 +92,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
 
   // ─── WIDGET BANTUAN ────────────────────────────────────────────────────────
 
-  Widget _buildDashboardTab(DashboardState state) {
+  Widget _buildDashboardTab(
+    DashboardState state,
+    List<ApprovalRequest> approvals,
+  ) {
     return RefreshIndicator(
       onRefresh: _onRefresh,
       color: const Color(0xFF00C689),
@@ -191,6 +198,21 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: _buildStatsRow(state),
+                ),
+                if (state.errorMessage != null) ...[
+                  const SizedBox(height: 16),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20),
+                    child: ErrorCard(
+                      message: state.errorMessage!,
+                      onRetry: _onRefresh,
+                    ),
+                  ),
+                ],
+                const SizedBox(height: 16),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: _buildApprovalSummary(approvals),
                 ),
                 const SizedBox(height: 32),
                 Padding(
@@ -324,6 +346,69 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildApprovalSummary(List<ApprovalRequest> approvals) {
+    final pending = approvals
+        .where((request) => request.status == ApprovalStatus.pending)
+        .toList();
+    final highPriority = pending
+        .where((request) => request.priority == ApprovalPriority.high)
+        .length;
+
+    final color = pending.isEmpty
+        ? AppColors.statusOk
+        : highPriority > 0
+        ? AppColors.statusError
+        : AppColors.statusWarning;
+
+    return GestureDetector(
+      onTap: () => setState(() => _selectedIndex = 2),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: AppDecorations.cardElevated(accentColor: color),
+        child: Row(
+          children: [
+            Container(
+              width: 42,
+              height: 42,
+              decoration: BoxDecoration(
+                color: color.withValues(alpha: 0.16),
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: Icon(Icons.verified_user_rounded, color: color),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Approval Pending',
+                    style: AppTypography.bodyLarge(context),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    pending.isEmpty
+                        ? 'Tidak ada request yang menunggu keputusan.'
+                        : '$highPriority prioritas tinggi dari ${pending.length} request.',
+                    style: AppTypography.bodyMedium(context),
+                  ),
+                ],
+              ),
+            ),
+            Text(
+              pending.length.toString(),
+              style: GoogleFonts.inter(
+                fontSize: 28,
+                fontWeight: FontWeight.w800,
+                color: color,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

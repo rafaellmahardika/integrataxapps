@@ -40,7 +40,9 @@ class BackendClient {
     } on TimeoutException {
       throw const BackendException('Koneksi middleware timeout.');
     } on http.ClientException catch (e) {
-      throw BackendException('Tidak dapat terhubung ke middleware: ${e.message}');
+      throw BackendException(
+        'Tidak dapat terhubung ke middleware: ${e.message}',
+      );
     } catch (e) {
       throw BackendException('Koneksi middleware gagal: $e');
     }
@@ -62,7 +64,9 @@ class BackendClient {
     } on TimeoutException {
       throw const BackendException('Koneksi middleware timeout.');
     } on http.ClientException catch (e) {
-      throw BackendException('Tidak dapat terhubung ke middleware: ${e.message}');
+      throw BackendException(
+        'Tidak dapat terhubung ke middleware: ${e.message}',
+      );
     } catch (e) {
       throw BackendException('Koneksi middleware gagal: $e');
     }

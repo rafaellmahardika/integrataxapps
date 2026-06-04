@@ -29,6 +29,25 @@ void main() {
     expect(find.text('Status: Disetujui'), findsOneWidget);
   });
 
+  testWidgets('Dashboard approval summary follows approval state', (
+    tester,
+  ) async {
+    await _pumpLoggedInApp(tester);
+
+    expect(find.text('Approval Pending'), findsOneWidget);
+    expect(find.text('1 prioritas tinggi dari 2 request.'), findsOneWidget);
+
+    await tester.tap(find.text('Approval'));
+    await tester.pump();
+    await tester.tap(find.text('Setujui').first);
+    await tester.pump();
+
+    await tester.tap(find.text('Dashboard'));
+    await tester.pump();
+
+    expect(find.text('0 prioritas tinggi dari 1 request.'), findsOneWidget);
+  });
+
   testWidgets('Approval reject requires a reason', (tester) async {
     await _pumpLoggedInApp(tester);
     await tester.tap(find.text('Approval'));

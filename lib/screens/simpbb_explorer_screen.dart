@@ -100,8 +100,8 @@ class _SimpbbExplorerScreenState extends ConsumerState<SimpbbExplorerScreen> {
           AnimatedSwitcher(
             duration: const Duration(milliseconds: 200),
             child: _showSearchResults
-                ? _SearchResultsView(state: searchState)
-                : _ListDetailsView(state: listState),
+                ? _SearchResultsView(state: searchState, onRetry: _runSearch)
+                : _ListDetailsView(state: listState, onRetry: _loadListDetails),
           ),
         ],
       ),
@@ -123,14 +123,16 @@ class _SimpbbExplorerScreenState extends ConsumerState<SimpbbExplorerScreen> {
 
 class _SearchResultsView extends StatelessWidget {
   final AsyncValue<List<ObjekPajakSearchResult>> state;
+  final VoidCallback onRetry;
 
-  const _SearchResultsView({required this.state});
+  const _SearchResultsView({required this.state, required this.onRetry});
 
   @override
   Widget build(BuildContext context) {
     return state.when(
       loading: () => const _LoadingCard(label: 'Mencari objek pajak...'),
-      error: (error, stackTrace) => _ErrorCard(message: '$error'),
+      error: (error, stackTrace) =>
+          _ErrorCard(message: '$error', onRetry: onRetry),
       data: (items) {
         if (items.isEmpty) {
           return const _EmptyCard(message: 'Belum ada hasil pencarian.');
@@ -146,14 +148,16 @@ class _SearchResultsView extends StatelessWidget {
 
 class _ListDetailsView extends StatelessWidget {
   final AsyncValue<List<ObjekPajakListItem>> state;
+  final VoidCallback onRetry;
 
-  const _ListDetailsView({required this.state});
+  const _ListDetailsView({required this.state, required this.onRetry});
 
   @override
   Widget build(BuildContext context) {
     return state.when(
       loading: () => const _LoadingCard(label: 'Memuat daftar objek pajak...'),
-      error: (error, stackTrace) => _ErrorCard(message: '$error'),
+      error: (error, stackTrace) =>
+          _ErrorCard(message: '$error', onRetry: onRetry),
       data: (items) {
         if (items.isEmpty) {
           return const _EmptyCard(message: 'Tidak ada data untuk filter ini.');
@@ -269,8 +273,9 @@ class _EmptyCard extends StatelessWidget {
 
 class _ErrorCard extends StatelessWidget {
   final String message;
+  final VoidCallback? onRetry;
 
-  const _ErrorCard({required this.message});
+  const _ErrorCard({required this.message, this.onRetry});
 
   @override
   Widget build(BuildContext context) {
@@ -278,11 +283,24 @@ class _ErrorCard extends StatelessWidget {
       key: const ValueKey('error'),
       padding: const EdgeInsets.all(18),
       decoration: AppDecorations.card(borderColor: AppColors.statusError),
-      child: Text(
-        message,
-        style: AppTypography.bodyMedium(
-          context,
-        ).copyWith(color: AppColors.statusError),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            message,
+            style: AppTypography.bodyMedium(
+              context,
+            ).copyWith(color: AppColors.statusError),
+          ),
+          if (onRetry != null) ...[
+            const SizedBox(height: 10),
+            TextButton.icon(
+              onPressed: onRetry,
+              icon: const Icon(Icons.refresh_rounded),
+              label: const Text('Coba lagi'),
+            ),
+          ],
+        ],
       ),
     );
   }

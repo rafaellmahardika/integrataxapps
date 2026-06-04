@@ -169,7 +169,6 @@ class SourceDetailScreen extends StatelessWidget {
       );
     });
   }
-
 }
 
 class _MetricRow extends StatelessWidget {

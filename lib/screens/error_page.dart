@@ -27,7 +27,8 @@ class ErrorPage extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final displayTitle = title ?? 'Terjadi Kesalahan';
-    final displayMessage = message ??
+    final displayMessage =
+        message ??
         (error != null
             ? _humanize(error!)
             : 'Operasi tidak dapat diselesaikan. Silakan coba lagi.');
@@ -239,11 +240,7 @@ class _ErrorBoundaryState extends State<ErrorBoundary> {
   @override
   Widget build(BuildContext context) {
     if (_error != null) {
-      return ErrorPage(
-        error: _error,
-        stackTrace: _stackTrace,
-        onRetry: _reset,
-      );
+      return ErrorPage(error: _error, stackTrace: _stackTrace, onRetry: _reset);
     }
     return widget.child;
   }
@@ -254,8 +251,11 @@ class _ErrorBoundaryState extends State<ErrorBoundary> {
 
   /// Report an error to the nearest [ErrorBoundary] ancestor.
   // ignore: unused_element
-  static void report(BuildContext context, Object error,
-      [StackTrace? stackTrace]) {
+  static void report(
+    BuildContext context,
+    Object error, [
+    StackTrace? stackTrace,
+  ]) {
     _maybeOf(context)?._setState(error, stackTrace);
   }
 
@@ -306,9 +306,9 @@ class ErrorCard extends StatelessWidget {
               children: [
                 Text(
                   message,
-                  style: AppTypography.bodyMedium(context).copyWith(
-                    color: AppColors.statusError,
-                  ),
+                  style: AppTypography.bodyMedium(
+                    context,
+                  ).copyWith(color: AppColors.statusError),
                 ),
                 if (onRetry != null) ...[
                   const SizedBox(height: 10),

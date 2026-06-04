@@ -9,8 +9,10 @@ class _NotificationEntry {
   final AppNotification notification;
   final bool isRead;
   const _NotificationEntry({required this.notification, this.isRead = false});
-  _NotificationEntry copyWith({bool? isRead}) =>
-      _NotificationEntry(notification: notification, isRead: isRead ?? this.isRead);
+  _NotificationEntry copyWith({bool? isRead}) => _NotificationEntry(
+    notification: notification,
+    isRead: isRead ?? this.isRead,
+  );
 }
 
 final notificationsProvider =
@@ -33,7 +35,10 @@ class NotificationsNotifier extends StateNotifier<List<_NotificationEntry>> {
   }
 
   void dismiss(String id) {
-    state = [for (final e in state) if (e.notification.id != id) e];
+    state = [
+      for (final e in state)
+        if (e.notification.id != id) e,
+    ];
   }
 }
 

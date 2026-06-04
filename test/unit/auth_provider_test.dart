@@ -55,34 +55,40 @@ void main() {
       expect(state.errorMessage, isNotNull);
     });
 
-    test('login with empty email, non-empty password → error message', () async {
-      await notifier.login('', 'password123');
-      final state = container.read(authProvider);
-      expect(state.isAuthenticated, isFalse);
-      expect(state.errorMessage, isNotNull);
-    });
+    test(
+      'login with empty email, non-empty password → error message',
+      () async {
+        await notifier.login('', 'password123');
+        final state = container.read(authProvider);
+        expect(state.isAuthenticated, isFalse);
+        expect(state.errorMessage, isNotNull);
+      },
+    );
 
     // ── Successful Login (Demo Mode) ──────────────────────────────────────────
 
-    test('login with any non-empty email + password → authenticated (demo mode)',
-        () async {
-      await notifier.login('any@email.com', 'anypassword');
-      final state = container.read(authProvider);
-      expect(state.isAuthenticated, isTrue);
-      expect(state.errorMessage, isNull);
-      expect(state.email, equals('any@email.com'));
-    });
+    test(
+      'login with any non-empty email + password → authenticated (demo mode)',
+      () async {
+        await notifier.login('any@email.com', 'anypassword');
+        final state = container.read(authProvider);
+        expect(state.isAuthenticated, isTrue);
+        expect(state.errorMessage, isNull);
+        expect(state.email, equals('any@email.com'));
+      },
+    );
 
     test(
-        'login with invalid email format (e.g. single char) → email format error',
-        () async {
-      await notifier.login('a', 'b');
-      final state = container.read(authProvider);
-      // 'a' is not a valid email — now correctly rejected after email validation
-      // was added (fixes SEC-001 partially). The user must provide a valid email.
-      expect(state.isAuthenticated, isFalse);
-      expect(state.errorMessage, contains('Format email'));
-    });
+      'login with invalid email format (e.g. single char) → email format error',
+      () async {
+        await notifier.login('a', 'b');
+        final state = container.read(authProvider);
+        // 'a' is not a valid email — now correctly rejected after email validation
+        // was added (fixes SEC-001 partially). The user must provide a valid email.
+        expect(state.isAuthenticated, isFalse);
+        expect(state.errorMessage, contains('Format email'));
+      },
+    );
 
     test('email is trimmed before storing', () async {
       await notifier.login('  admin@test.com  ', 'password');

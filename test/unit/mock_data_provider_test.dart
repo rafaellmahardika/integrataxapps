@@ -26,8 +26,11 @@ void main() {
       final result = maskNop('32.04.010.001.001.0001.0');
       final parts = result.split('.');
       for (final part in parts.skip(2)) {
-        expect(RegExp(r'^\*+$').hasMatch(part), isTrue,
-            reason: 'Segment "$part" should contain only asterisks');
+        expect(
+          RegExp(r'^\*+$').hasMatch(part),
+          isTrue,
+          reason: 'Segment "$part" should contain only asterisks',
+        );
       }
     });
 
@@ -36,8 +39,11 @@ void main() {
       final original = input.split('.');
       final masked = maskNop(input).split('.');
       for (int i = 2; i < original.length; i++) {
-        expect(masked[i].length, equals(original[i].length),
-            reason: 'Segment $i: masked length should match original');
+        expect(
+          masked[i].length,
+          equals(original[i].length),
+          reason: 'Segment $i: masked length should match original',
+        );
       }
     });
 
@@ -75,7 +81,9 @@ void main() {
     });
 
     test('returns minutes for timestamps 1–59 minutes ago', () {
-      final fiveMinutesAgo = DateTime.now().subtract(const Duration(minutes: 5));
+      final fiveMinutesAgo = DateTime.now().subtract(
+        const Duration(minutes: 5),
+      );
       expect(relativeTime(fiveMinutesAgo), equals('5 menit lalu'));
     });
 

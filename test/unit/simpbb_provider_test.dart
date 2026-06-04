@@ -17,27 +17,33 @@ import 'package:integratax/providers/simpbb_provider.dart';
 http.Client mockClient(MockClientHandler handler) => MockClient(handler);
 
 /// Successful SIMPBB search response with one result.
-http.Client successClient() => mockClient((_) async => http.Response(
-      '{"data": [{"kdPropinsi":"51","kdDati2":"71","kdKecamatan":"010",'
-      '"kdKelurahan":"001","kdBlok":"098","noUrut":"0019","kdJnsOp":"0",'
-      '"nmWpSppt":"JOKO TEST","jalanOp":"JL. TEST NO. 1"}]}',
-      200,
-      headers: {'content-type': 'application/json'},
-    ));
+http.Client successClient() => mockClient(
+  (_) async => http.Response(
+    '{"data": [{"kdPropinsi":"51","kdDati2":"71","kdKecamatan":"010",'
+    '"kdKelurahan":"001","kdBlok":"098","noUrut":"0019","kdJnsOp":"0",'
+    '"nmWpSppt":"JOKO TEST","jalanOp":"JL. TEST NO. 1"}]}',
+    200,
+    headers: {'content-type': 'application/json'},
+  ),
+);
 
 /// Successful but empty result list.
-http.Client emptyClient() => mockClient((_) async => http.Response(
-      '{"data": []}',
-      200,
-      headers: {'content-type': 'application/json'},
-    ));
+http.Client emptyClient() => mockClient(
+  (_) async => http.Response(
+    '{"data": []}',
+    200,
+    headers: {'content-type': 'application/json'},
+  ),
+);
 
 /// Simulates a network/server error (500).
-http.Client errorClient() => mockClient((_) async => http.Response(
-      '{"message": "Server sedang tidak tersedia."}',
-      500,
-      headers: {'content-type': 'application/json'},
-    ));
+http.Client errorClient() => mockClient(
+  (_) async => http.Response(
+    '{"message": "Server sedang tidak tersedia."}',
+    500,
+    headers: {'content-type': 'application/json'},
+  ),
+);
 
 /// Simulates a connection failure.
 http.Client offlineClient() =>
@@ -47,9 +53,7 @@ http.Client offlineClient() =>
 
 ProviderContainer buildContainer({required http.Client httpClient}) {
   return ProviderContainer(
-    overrides: [
-      httpClientProvider.overrideWithValue(httpClient),
-    ],
+    overrides: [httpClientProvider.overrideWithValue(httpClient)],
   );
 }
 
@@ -74,9 +78,7 @@ void main() {
       final container = buildContainer(httpClient: emptyClient());
       addTearDown(container.dispose);
 
-      await container
-          .read(objekPajakSearchProvider.notifier)
-          .search('');
+      await container.read(objekPajakSearchProvider.notifier).search('');
       final state = container.read(objekPajakSearchProvider);
       expect(state, isA<AsyncData>());
       expect(state.value, isEmpty);
@@ -86,37 +88,33 @@ void main() {
       final container = buildContainer(httpClient: emptyClient());
       addTearDown(container.dispose);
 
-      await container
-          .read(objekPajakSearchProvider.notifier)
-          .search('   ');
+      await container.read(objekPajakSearchProvider.notifier).search('   ');
       final state = container.read(objekPajakSearchProvider);
       expect(state, isA<AsyncData>());
       expect(state.value, isEmpty);
     });
 
-    test('search with 1-char query returns AsyncError with min-length message',
-        () async {
-      final container = buildContainer(httpClient: emptyClient());
-      addTearDown(container.dispose);
+    test(
+      'search with 1-char query returns AsyncError with min-length message',
+      () async {
+        final container = buildContainer(httpClient: emptyClient());
+        addTearDown(container.dispose);
 
-      await container
-          .read(objekPajakSearchProvider.notifier)
-          .search('A');
-      final state = container.read(objekPajakSearchProvider);
-      expect(state, isA<AsyncError>());
-      expect(
-        (state as AsyncError).error.toString(),
-        contains('minimal $simpbbMinQueryLength karakter'),
-      );
-    });
+        await container.read(objekPajakSearchProvider.notifier).search('A');
+        final state = container.read(objekPajakSearchProvider);
+        expect(state, isA<AsyncError>());
+        expect(
+          (state as AsyncError).error.toString(),
+          contains('minimal $simpbbMinQueryLength karakter'),
+        );
+      },
+    );
 
     test('BUG-005 verified: 1-char is no longer silently empty', () async {
       final container = buildContainer(httpClient: emptyClient());
       addTearDown(container.dispose);
 
-      await container
-          .read(objekPajakSearchProvider.notifier)
-          .search('X');
+      await container.read(objekPajakSearchProvider.notifier).search('X');
       final state = container.read(objekPajakSearchProvider);
       // Before the fix, this would be AsyncData([]) — now it's AsyncError.
       expect(state, isNot(isA<AsyncData>()));
@@ -128,9 +126,7 @@ void main() {
       final container = buildContainer(httpClient: successClient());
       addTearDown(container.dispose);
 
-      await container
-          .read(objekPajakSearchProvider.notifier)
-          .search('JO');
+      await container.read(objekPajakSearchProvider.notifier).search('JO');
       final state = container.read(objekPajakSearchProvider);
       expect(state, isA<AsyncData>());
       expect(state.value, isNotEmpty);
@@ -142,9 +138,7 @@ void main() {
       addTearDown(container.dispose);
 
       // '  JO  ' has 2 non-whitespace chars after trim → valid
-      await container
-          .read(objekPajakSearchProvider.notifier)
-          .search('  JO  ');
+      await container.read(objekPajakSearchProvider.notifier).search('  JO  ');
       final state = container.read(objekPajakSearchProvider);
       expect(state, isA<AsyncData>());
     });
@@ -153,9 +147,7 @@ void main() {
       final container = buildContainer(httpClient: emptyClient());
       addTearDown(container.dispose);
 
-      await container
-          .read(objekPajakSearchProvider.notifier)
-          .search('BUDI');
+      await container.read(objekPajakSearchProvider.notifier).search('BUDI');
       final state = container.read(objekPajakSearchProvider);
       expect(state, isA<AsyncData>());
       expect(state.value, isEmpty);
@@ -167,9 +159,7 @@ void main() {
       final container = buildContainer(httpClient: errorClient());
       addTearDown(container.dispose);
 
-      await container
-          .read(objekPajakSearchProvider.notifier)
-          .search('BUDI');
+      await container.read(objekPajakSearchProvider.notifier).search('BUDI');
       final state = container.read(objekPajakSearchProvider);
       expect(state, isA<AsyncError>());
     });
@@ -178,9 +168,7 @@ void main() {
       final container = buildContainer(httpClient: offlineClient());
       addTearDown(container.dispose);
 
-      await container
-          .read(objekPajakSearchProvider.notifier)
-          .search('BUDI');
+      await container.read(objekPajakSearchProvider.notifier).search('BUDI');
       final state = container.read(objekPajakSearchProvider);
       expect(state, isA<AsyncError>());
     });
@@ -208,15 +196,11 @@ void main() {
       addTearDown(container.dispose);
 
       // First search → error
-      await container
-          .read(objekPajakSearchProvider.notifier)
-          .search('BUDI');
+      await container.read(objekPajakSearchProvider.notifier).search('BUDI');
       expect(container.read(objekPajakSearchProvider), isA<AsyncError>());
 
       // Empty query resets to data
-      await container
-          .read(objekPajakSearchProvider.notifier)
-          .search('');
+      await container.read(objekPajakSearchProvider.notifier).search('');
       expect(container.read(objekPajakSearchProvider), isA<AsyncData>());
     });
   });

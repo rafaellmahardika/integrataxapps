@@ -24,9 +24,7 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
     // Apply severity filter
     final filtered = _filter == null
         ? entries
-        : entries
-            .where((e) => e.notification.severity == _filter)
-            .toList();
+        : entries.where((e) => e.notification.severity == _filter).toList();
 
     return ListView(
       padding: const EdgeInsets.fromLTRB(20, 78, 20, 120),
@@ -114,9 +112,8 @@ class _NotificationScreenState extends ConsumerState<NotificationScreen> {
                     label: sev.label,
                     color: sev.color,
                     selected: _filter == sev,
-                    onTap: () => setState(
-                      () => _filter = (_filter == sev) ? null : sev,
-                    ),
+                    onTap: () =>
+                        setState(() => _filter = (_filter == sev) ? null : sev),
                   ),
                 ),
               ),
@@ -196,13 +193,12 @@ class _NotificationCard extends StatelessWidget {
           duration: const Duration(milliseconds: 250),
           margin: const EdgeInsets.only(bottom: 14),
           padding: const EdgeInsets.all(16),
-          decoration: AppDecorations.cardElevated(
-            accentColor: item.severity.color,
-          ).copyWith(
-            color: isRead
-                ? AppColors.bgSurface
-                : AppColors.bgElevated,
-          ),
+          decoration:
+              AppDecorations.cardElevated(
+                accentColor: item.severity.color,
+              ).copyWith(
+                color: isRead ? AppColors.bgSurface : AppColors.bgElevated,
+              ),
           child: Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
