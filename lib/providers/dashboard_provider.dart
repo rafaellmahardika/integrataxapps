@@ -123,10 +123,12 @@ class DashboardNotifier extends StateNotifier<DashboardState> {
         name: 'Disdukcapil',
         fullName: 'Dinas Kependudukan & Catatan Sipil',
         dataDescription: 'Data identitas & NIK Wajib Pajak',
-        status: SyncStatus.syncing,
+        // Status: connected — sync completed 1 minute ago with 0 failures.
+        // (was incorrectly set to 'syncing' while logs showed a completed sync)
+        status: SyncStatus.connected,
         lastSyncAt: now.subtract(const Duration(minutes: 1)),
         lastSyncRecords: 98210,
-        lastSyncDurationSec: null,
+        lastSyncDurationSec: 47,
         lastSyncFailed: 0,
       ),
       DataSource(

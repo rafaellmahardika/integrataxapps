@@ -40,7 +40,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = state.copyWith(isLoading: true, clearError: true);
     await Future.delayed(const Duration(milliseconds: 650));
 
-    if (email.trim().isEmpty || password.trim().isEmpty) {
+    final trimmedEmail = email.trim();
+    final trimmedPassword = password.trim();
+
+    if (trimmedEmail.isEmpty || trimmedPassword.isEmpty) {
       state = state.copyWith(
         isLoading: false,
         errorMessage: 'Email dan password wajib diisi.',
@@ -48,7 +51,17 @@ class AuthNotifier extends StateNotifier<AuthState> {
       return;
     }
 
-    state = AuthState(isAuthenticated: true, email: email.trim());
+    // Basic email format check — catches obvious typos (no @, no domain, etc.)
+    final emailRegex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+    if (!emailRegex.hasMatch(trimmedEmail)) {
+      state = state.copyWith(
+        isLoading: false,
+        errorMessage: 'Format email tidak valid.',
+      );
+      return;
+    }
+
+    state = AuthState(isAuthenticated: true, email: trimmedEmail);
   }
 
   void logout() {

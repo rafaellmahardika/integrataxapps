@@ -86,18 +86,90 @@ class SourceDetailScreen extends StatelessWidget {
   }
 
   List<_DetailLog> _buildLogs(DataSource source) {
-    return List.generate(10, (index) {
-      final failed = source.status == SyncStatus.failed && index == 0;
+    // Varied log templates — each entry has a distinct action and message
+    // so the detail screen doesn't show 10 nearly identical lines.
+    // The first entry reflects the current status of the source.
+    final String firstAction;
+    final String firstMessage;
+    final Color firstColor;
+
+    switch (source.status) {
+      case SyncStatus.failed:
+        firstAction = 'Sinkronisasi gagal';
+        firstMessage = source.errorMessage ?? 'Timeout koneksi';
+        firstColor = AppColors.statusError;
+      case SyncStatus.syncing:
+        firstAction = 'Sinkronisasi berjalan';
+        firstMessage = 'Sedang memproses ${source.recordsFormatted} record...';
+        firstColor = AppColors.statusWarning;
+      case SyncStatus.connected:
+      default:
+        firstAction = 'Sinkronisasi selesai';
+        firstMessage = '${source.recordsFormatted} record diproses';
+        firstColor = AppColors.statusOk;
+    }
+
+    final templates = [
+      (action: firstAction, message: firstMessage, color: firstColor),
+      (
+        action: 'Validasi data',
+        message: '${source.recordsFormatted} record lulus validasi skema',
+        color: AppColors.statusOk,
+      ),
+      (
+        action: 'Deduplikasi',
+        message: 'Proses penghapusan duplikat selesai',
+        color: AppColors.statusOk,
+      ),
+      (
+        action: 'Koneksi dibuka',
+        message: 'Middleware berhasil terhubung ke sumber data',
+        color: AppColors.statusOk,
+      ),
+      (
+        action: 'Retry #1',
+        message: 'Mencoba ulang koneksi setelah timeout singkat',
+        color: AppColors.statusWarning,
+      ),
+      (
+        action: 'Sinkronisasi selesai',
+        message: 'Batch pertama ${source.recordsFormatted} record selesai',
+        color: AppColors.statusOk,
+      ),
+      (
+        action: 'Kompresi data',
+        message: 'Payload dikompresi sebelum transfer',
+        color: AppColors.statusOk,
+      ),
+      (
+        action: 'Autentikasi',
+        message: 'Token API sumber data diperbarui',
+        color: AppColors.statusOk,
+      ),
+      (
+        action: 'Pengecekan integritas',
+        message: 'Checksum seluruh record cocok',
+        color: AppColors.statusOk,
+      ),
+      (
+        action: 'Sesi ditutup',
+        message: 'Koneksi ke sumber data ditutup dengan bersih',
+        color: AppColors.statusOk,
+      ),
+    ];
+
+    return List.generate(templates.length, (index) {
+      final t = templates[index];
+      final hoursAgo = index == 0 ? 'Baru saja' : '${index + 1} jam lalu';
       return _DetailLog(
-        title: failed ? 'Sinkronisasi gagal' : 'Sinkronisasi selesai',
-        message: failed
-            ? source.errorMessage ?? 'Timeout koneksi'
-            : '${source.recordsFormatted} record diproses',
-        time: '${index + 1} jam lalu',
-        color: failed ? AppColors.statusError : AppColors.statusOk,
+        title: t.action,
+        message: t.message,
+        time: hoursAgo,
+        color: t.color,
       );
     });
   }
+
 }
 
 class _MetricRow extends StatelessWidget {

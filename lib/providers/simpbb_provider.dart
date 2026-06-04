@@ -1,10 +1,22 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:http/http.dart' as http;
 
 import '../core/backend_client.dart';
 import '../models/objek_pajak.dart';
 
+/// Minimum characters required for a SIMPBB search query.
+const int simpbbMinQueryLength = 2;
+
+/// Injected HTTP client — override in tests to avoid real network calls.
+final httpClientProvider = Provider<http.Client>((ref) => http.Client());
+
+/// Backend client provider — injectable and testable.
+final backendClientProvider = Provider<BackendClient>((ref) {
+  return BackendClient(httpClient: ref.watch(httpClientProvider));
+});
+
 final simpbbRepositoryProvider = Provider<SimpbbRepository>((ref) {
-  return SimpbbRepository(backendClient);
+  return SimpbbRepository(ref.watch(backendClientProvider));
 });
 
 final objekPajakSearchProvider =
@@ -70,13 +82,24 @@ class ObjekPajakSearchNotifier
   ObjekPajakSearchNotifier(this._repository) : super(const AsyncData([]));
 
   Future<void> search(String query) async {
-    if (query.trim().length < 2) {
+    final trimmed = query.trim();
+    if (trimmed.isEmpty) {
+      // Field is blank — reset to empty without error.
       state = const AsyncData([]);
+      return;
+    }
+    if (trimmed.length < simpbbMinQueryLength) {
+      // Query too short — surface a user-friendly error rather than silently
+      // returning an empty list (fixes BUG-005).
+      state = AsyncError(
+        'Kata kunci minimal $simpbbMinQueryLength karakter.',
+        StackTrace.current,
+      );
       return;
     }
 
     state = const AsyncLoading();
-    state = await AsyncValue.guard(() => _repository.searchObjekPajak(query));
+    state = await AsyncValue.guard(() => _repository.searchObjekPajak(trimmed));
   }
 }
 

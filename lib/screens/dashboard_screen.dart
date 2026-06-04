@@ -178,8 +178,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
                         ),
                       IconButton(
                         tooltip: 'Logout',
-                        onPressed: () =>
-                            ref.read(authProvider.notifier).logout(),
+                        onPressed: () => _confirmLogout(context, ref),
                         icon: const Icon(
                           Icons.logout_rounded,
                           color: Colors.white,
@@ -264,13 +263,13 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
     final errorCount = state.dataSources.where((s) => s.hasFailures).length;
 
     // Kalkulasi format waktu "Terakhir Update"
-    String updateText = 'now';
+    String updateText = 'Baru saja';
     if (state.lastRefreshedAt != null) {
       final diff = DateTime.now().difference(state.lastRefreshedAt!);
       if (diff.inMinutes > 0 && diff.inMinutes < 60) {
-        updateText = '${diff.inMinutes}m ago';
+        updateText = '${diff.inMinutes}m lalu';
       } else if (diff.inHours > 0) {
-        updateText = '${diff.inHours}h ago';
+        updateText = '${diff.inHours}j lalu';
       }
     }
 
@@ -405,36 +404,80 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen> {
   Widget _buildNavItem(IconData icon, String label, int index) {
     final isSelected = _selectedIndex == index;
     const unselectedColor = Color(0xFF02543B); // Hijau sangat gelap
-    return GestureDetector(
-      onTap: () => setState(() => _selectedIndex = index),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: isSelected
-            ? BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(30),
-              )
-            : null,
-        child: Row(
-          children: [
-            Icon(
-              icon,
-              size: 18,
-              color: isSelected ? const Color(0xFF00C689) : unselectedColor,
-            ),
-            const SizedBox(width: 6),
-            Text(
-              label,
-              style: GoogleFonts.inter(
-                fontSize: 12,
-                fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+    return Semantics(
+      label: label,
+      button: true,
+      selected: isSelected,
+      child: GestureDetector(
+        onTap: () => setState(() => _selectedIndex = index),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: isSelected
+              ? BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(30),
+                )
+              : null,
+          child: Row(
+            children: [
+              Icon(
+                icon,
+                size: 18,
                 color: isSelected ? const Color(0xFF00C689) : unselectedColor,
               ),
-            ),
-          ],
+              const SizedBox(width: 6),
+              Text(
+                label,
+                style: GoogleFonts.inter(
+                  fontSize: 12,
+                  fontWeight: isSelected ? FontWeight.w700 : FontWeight.w600,
+                  color: isSelected ? const Color(0xFF00C689) : unselectedColor,
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );
+  }
+
+  // ── Logout confirmation ───────────────────────────────────────────────────
+
+  static Future<void> _confirmLogout(
+    BuildContext context,
+    WidgetRef ref,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.bgElevated,
+        icon: const Icon(
+          Icons.logout_rounded,
+          color: AppColors.statusWarning,
+          size: 36,
+        ),
+        title: const Text('Keluar dari sesi?'),
+        content: const Text(
+          'Anda akan keluar dari dashboard. Semua data sesi saat ini akan dihapus.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(ctx).pop(false),
+            child: const Text('Batal'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(ctx).pop(true),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.statusError,
+            ),
+            child: const Text('Keluar'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed == true && context.mounted) {
+      ref.read(authProvider.notifier).logout();
+    }
   }
 }
 

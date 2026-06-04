@@ -1,5 +1,5 @@
+import 'dart:async' show TimeoutException;
 import 'dart:convert';
-import 'dart:io';
 
 import 'package:http/http.dart' as http;
 
@@ -37,12 +37,12 @@ class BackendClient {
           )
           .timeout(_timeout);
       return _decode(response);
-    } on SocketException catch (e) {
-      throw BackendException(
-        'Tidak dapat terhubung ke middleware: ${e.message}',
-      );
+    } on TimeoutException {
+      throw const BackendException('Koneksi middleware timeout.');
     } on http.ClientException catch (e) {
-      throw BackendException('Koneksi middleware gagal: ${e.message}');
+      throw BackendException('Tidak dapat terhubung ke middleware: ${e.message}');
+    } catch (e) {
+      throw BackendException('Koneksi middleware gagal: $e');
     }
   }
 
@@ -59,12 +59,12 @@ class BackendClient {
           )
           .timeout(_timeout);
       return _decode(response);
-    } on SocketException catch (e) {
-      throw BackendException(
-        'Tidak dapat terhubung ke middleware: ${e.message}',
-      );
+    } on TimeoutException {
+      throw const BackendException('Koneksi middleware timeout.');
     } on http.ClientException catch (e) {
-      throw BackendException('Koneksi middleware gagal: ${e.message}');
+      throw BackendException('Tidak dapat terhubung ke middleware: ${e.message}');
+    } catch (e) {
+      throw BackendException('Koneksi middleware gagal: $e');
     }
   }
 
@@ -92,4 +92,8 @@ class BackendClient {
   }
 }
 
+// ---------------------------------------------------------------------------
+// Injectable provider — prefer using backendClientProvider in Riverpod code.
+// The bare singleton below is kept only for the global provider reference.
+// ---------------------------------------------------------------------------
 final backendClient = BackendClient();

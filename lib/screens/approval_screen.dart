@@ -5,6 +5,7 @@ import 'package:google_fonts/google_fonts.dart';
 import '../core/theme.dart';
 import '../models/approval_request.dart';
 import '../providers/mock_data_provider.dart';
+import 'error_page.dart';
 
 class ApprovalScreen extends ConsumerWidget {
   const ApprovalScreen({super.key});
@@ -30,37 +31,142 @@ class ApprovalScreen extends ConsumerWidget {
           style: AppTypography.bodyMedium(context),
         ),
         const SizedBox(height: 20),
-        ...items.map(
-          (item) => _ApprovalCard(
-            item: item,
-            onApprove: () {
-              ref.read(approvalRequestsProvider.notifier).approve(item.id);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(content: Text('${item.title} disetujui.')),
-              );
-            },
-            onReject: (reason) {
-              ref
-                  .read(approvalRequestsProvider.notifier)
-                  .reject(item.id, reason);
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(SnackBar(content: Text('${item.title} ditolak.')));
-            },
+        // ── Empty state ──────────────────────────────────────────────────────
+        if (items.isEmpty)
+          _EmptyState()
+        else
+          ...items.map(
+            (item) => _ApprovalCard(
+              item: item,
+              // Pass the screen-level context from ConsumerWidget.build so it
+              // is always valid when ScaffoldMessenger is called after the dialog
+              // closes (fixes the stale-context rejection bug).
+              screenContext: context,
+              onApprove: () {
+                _safeApprove(context, ref, item);
+              },
+              onReject: (reason) {
+                _safeReject(context, ref, item, reason);
+              },
+            ),
           ),
-        ),
       ],
+    );
+  }
+
+  // ── Guarded action helpers ───────────────────────────────────────────────
+
+  static void _safeApprove(
+    BuildContext context,
+    WidgetRef ref,
+    ApprovalRequest item,
+  ) {
+    try {
+      ref.read(approvalRequestsProvider.notifier).approve(item.id);
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${item.title} disetujui.'),
+          backgroundColor: AppColors.statusOk,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } catch (e, st) {
+      if (!context.mounted) return;
+      _showErrorDialog(context, 'Gagal menyetujui', e, st);
+    }
+  }
+
+  static void _safeReject(
+    BuildContext context,
+    WidgetRef ref,
+    ApprovalRequest item,
+    String reason,
+  ) {
+    try {
+      ref.read(approvalRequestsProvider.notifier).reject(item.id, reason);
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('${item.title} ditolak.'),
+          backgroundColor: AppColors.statusError,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } catch (e, st) {
+      if (!context.mounted) return;
+      _showErrorDialog(context, 'Gagal menolak approval', e, st);
+    }
+  }
+
+  static Future<void> _showErrorDialog(
+    BuildContext context,
+    String title,
+    Object error,
+    StackTrace stackTrace,
+  ) {
+    return showDialog<void>(
+      context: context,
+      builder: (_) => AlertDialog(
+        backgroundColor: AppColors.bgElevated,
+        icon: const Icon(
+          Icons.error_outline_rounded,
+          color: AppColors.statusError,
+          size: 36,
+        ),
+        title: Text(title),
+        content: ErrorCard(
+          message: error.toString().length > 300
+              ? '${error.toString().substring(0, 300)}…'
+              : error.toString(),
+        ),
+        actions: [
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(),
+            style: FilledButton.styleFrom(
+              backgroundColor: AppColors.statusError,
+            ),
+            child: const Text('Tutup'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _EmptyState extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 48),
+      child: Column(
+        children: [
+          Icon(
+            Icons.check_circle_outline_rounded,
+            size: 56,
+            color: AppColors.statusOk.withValues(alpha: 0.6),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'Tidak ada approval tertunda.',
+            style: AppTypography.bodyMedium(context),
+            textAlign: TextAlign.center,
+          ),
+        ],
+      ),
     );
   }
 }
 
 class _ApprovalCard extends StatelessWidget {
   final ApprovalRequest item;
+  final BuildContext screenContext;
   final VoidCallback onApprove;
   final ValueChanged<String> onReject;
 
   const _ApprovalCard({
     required this.item,
+    required this.screenContext,
     required this.onApprove,
     required this.onReject,
   });
@@ -107,7 +213,9 @@ class _ApprovalCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: OutlinedButton(
-                    onPressed: () => _showRejectDialog(context),
+                    // Use screenContext so ScaffoldMessenger lookup is always
+                    // valid — the card's own context may be stale after dialog.
+                    onPressed: () => _showRejectDialog(screenContext),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: AppColors.statusError,
                       side: const BorderSide(color: AppColors.statusError),
@@ -118,7 +226,7 @@ class _ApprovalCard extends StatelessWidget {
                 const SizedBox(width: 12),
                 Expanded(
                   child: FilledButton(
-                    onPressed: () => _approve(context),
+                    onPressed: onApprove,
                     style: FilledButton.styleFrom(
                       backgroundColor: AppColors.primary,
                     ),
@@ -134,47 +242,69 @@ class _ApprovalCard extends StatelessWidget {
     );
   }
 
-  void _approve(BuildContext context) {
-    onApprove();
-  }
-
-  Future<void> _showRejectDialog(BuildContext context) async {
+  Future<void> _showRejectDialog(BuildContext ctx) async {
     final controller = TextEditingController();
     String? errorText;
+    int charCount = 0;
+    const int minChars = 10;
 
     final reason = await showDialog<String>(
-      context: context,
-      builder: (context) {
+      context: ctx,
+      builder: (dialogContext) {
         return StatefulBuilder(
-          builder: (context, setDialogState) {
+          builder: (dialogContext, setDialogState) {
+            final bool meetsMinimum = charCount >= minChars;
             return AlertDialog(
               backgroundColor: AppColors.bgElevated,
               title: const Text('Tolak Approval'),
-              content: TextField(
-                controller: controller,
-                minLines: 3,
-                maxLines: 4,
-                autofocus: true,
-                decoration: InputDecoration(
-                  hintText: 'Masukkan alasan penolakan',
-                  errorText: errorText,
-                ),
+              content: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  TextField(
+                    controller: controller,
+                    minLines: 3,
+                    maxLines: 4,
+                    autofocus: true,
+                    onChanged: (value) {
+                      setDialogState(() {
+                        charCount = value.trim().length;
+                        if (charCount >= minChars) errorText = null;
+                      });
+                    },
+                    decoration: InputDecoration(
+                      hintText: 'Masukkan alasan penolakan',
+                      errorText: errorText,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    '$charCount / $minChars karakter minimum',
+                    textAlign: TextAlign.end,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: meetsMinimum
+                          ? AppColors.statusOk
+                          : AppColors.textSecondary,
+                    ),
+                  ),
+                ],
               ),
               actions: [
                 TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
+                  onPressed: () => Navigator.of(dialogContext).pop(),
                   child: const Text('Batal'),
                 ),
                 FilledButton(
                   onPressed: () {
                     final text = controller.text.trim();
-                    if (text.length < 10) {
+                    if (text.length < minChars) {
                       setDialogState(() {
-                        errorText = 'Alasan minimal 10 karakter.';
+                        errorText = 'Alasan minimal $minChars karakter.';
                       });
                       return;
                     }
-                    Navigator.of(context).pop(text);
+                    Navigator.of(dialogContext).pop(text);
                   },
                   child: const Text('Tolak'),
                 ),

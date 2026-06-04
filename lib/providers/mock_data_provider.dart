@@ -4,35 +4,74 @@ import '../models/app_notification.dart';
 import '../models/approval_request.dart';
 import '../models/sync_log.dart';
 
-final notificationsProvider = Provider<List<AppNotification>>((ref) {
+// Wrap the notification with read/unread state locally.
+class _NotificationEntry {
+  final AppNotification notification;
+  final bool isRead;
+  const _NotificationEntry({required this.notification, this.isRead = false});
+  _NotificationEntry copyWith({bool? isRead}) =>
+      _NotificationEntry(notification: notification, isRead: isRead ?? this.isRead);
+}
+
+final notificationsProvider =
+    StateNotifierProvider<NotificationsNotifier, List<_NotificationEntry>>(
+      (ref) => NotificationsNotifier(),
+    );
+
+class NotificationsNotifier extends StateNotifier<List<_NotificationEntry>> {
+  NotificationsNotifier() : super(_buildInitialNotifications());
+
+  void markAsRead(String id) {
+    state = [
+      for (final e in state)
+        if (e.notification.id == id) e.copyWith(isRead: true) else e,
+    ];
+  }
+
+  void markAllAsRead() {
+    state = [for (final e in state) e.copyWith(isRead: true)];
+  }
+
+  void dismiss(String id) {
+    state = [for (final e in state) if (e.notification.id != id) e];
+  }
+}
+
+List<_NotificationEntry> _buildInitialNotifications() {
   final now = DateTime.now();
   return [
-    AppNotification(
-      id: 'notif-bpjs-timeout',
-      title: 'BPJS gagal sinkronisasi',
-      message: 'Timeout middleware BPJS melebihi 5 menit.',
-      sourceId: 'bpjs',
-      createdAt: now.subtract(const Duration(minutes: 10)),
-      severity: NotificationSeverity.critical,
+    _NotificationEntry(
+      notification: AppNotification(
+        id: 'notif-bpjs-timeout',
+        title: 'BPJS gagal sinkronisasi',
+        message: 'Timeout middleware BPJS melebihi 5 menit.',
+        sourceId: 'bpjs',
+        createdAt: now.subtract(const Duration(minutes: 10)),
+        severity: NotificationSeverity.critical,
+      ),
     ),
-    AppNotification(
-      id: 'notif-disdukcapil-syncing',
-      title: 'Disdukcapil sedang sinkronisasi',
-      message: 'Proses pencocokan NIK wajib pajak sedang berjalan.',
-      sourceId: 'disdukcapil',
-      createdAt: now.subtract(const Duration(minutes: 24)),
-      severity: NotificationSeverity.warning,
+    _NotificationEntry(
+      notification: AppNotification(
+        id: 'notif-disdukcapil-syncing',
+        title: 'Disdukcapil sedang sinkronisasi',
+        message: 'Proses pencocokan NIK wajib pajak sedang berjalan.',
+        sourceId: 'disdukcapil',
+        createdAt: now.subtract(const Duration(minutes: 24)),
+        severity: NotificationSeverity.warning,
+      ),
     ),
-    AppNotification(
-      id: 'notif-bpn-success',
-      title: 'BPN selesai sinkronisasi',
-      message: '142.380 record objek pajak berhasil diperbarui.',
-      sourceId: 'bpn',
-      createdAt: now.subtract(const Duration(hours: 1)),
-      severity: NotificationSeverity.success,
+    _NotificationEntry(
+      notification: AppNotification(
+        id: 'notif-bpn-success',
+        title: 'BPN selesai sinkronisasi',
+        message: '142.380 record objek pajak berhasil diperbarui.',
+        sourceId: 'bpn',
+        createdAt: now.subtract(const Duration(hours: 1)),
+        severity: NotificationSeverity.success,
+      ),
     ),
   ];
-});
+}
 
 final approvalRequestsProvider =
     StateNotifierProvider<ApprovalRequestsNotifier, List<ApprovalRequest>>(
@@ -132,7 +171,9 @@ final syncLogsProvider = Provider<List<SyncLog>>((ref) {
       sourceName: 'SIMPBB',
       action: 'Sensitive Access',
       message: 'Akses profil objek pajak oleh Administrator IT.',
-      nop: '32.04.010.001.001.0001.0',
+      // Privacy: NOP disamarkan sebagian di sisi klien.
+      // Di produksi, penyamaran harus dilakukan di sisi server.
+      nop: maskNop('32.04.010.001.001.0001.0'),
       status: SyncLogStatus.success,
       timestamp: now.subtract(const Duration(hours: 2, minutes: 18)),
     ),
@@ -145,4 +186,22 @@ String relativeTime(DateTime dateTime) {
   if (diff.inMinutes < 60) return '${diff.inMinutes} menit lalu';
   if (diff.inHours < 24) return '${diff.inHours} jam lalu';
   return '${diff.inDays} hari lalu';
+}
+
+/// Partially masks a NOP (Nomor Objek Pajak) for display in logs.
+///
+/// Keeps the province and city prefix (first 2 dot-separated segments) to
+/// provide geographic context, and replaces the remaining segments with
+/// asterisk placeholders so the specific object cannot be identified.
+///
+/// Example: `32.04.010.001.001.0001.0` → `32.04.***.***.***.****.*`
+///
+/// NOTE: In production, masking must also be enforced server-side.
+/// Client-side masking alone is not sufficient for compliance.
+String maskNop(String nop) {
+  final parts = nop.split('.');
+  if (parts.length < 3) return nop; // Too short to mask meaningfully
+  final visible = parts.take(2).join('.');
+  final masked = parts.skip(2).map((p) => '*' * p.length).join('.');
+  return '$visible.$masked';
 }
