@@ -44,3 +44,8 @@ app.*.map.json
 /android/app/debug
 /android/app/profile
 /android/app/release
+
+# Backend environment variables — NEVER commit these
+backend/.env
+backend/.env.local
+backend/.env.production

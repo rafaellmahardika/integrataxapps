@@ -5,11 +5,23 @@
   "type": "module",
   "scripts": {
     "dev": "node --watch src/server.js",
-    "start": "node src/server.js"
+    "start": "node src/server.js",
+    "test": "node --experimental-vm-modules node_modules/.bin/jest --forceExit",
+    "lint": "node --input-type=module --eval 'import \"./src/server.js\"' || true"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "transform": {},
+    "extensionsToTreatAsEsm": []
   },
   "dependencies": {
     "cors": "^2.8.5",
-    "express": "^4.18.3"
+    "express": "^4.18.3",
+    "express-rate-limit": "^7.0.0",
+    "helmet": "^8.0.0"
   },
-  "devDependencies": {}
+  "devDependencies": {
+    "jest": "^29.0.0",
+    "supertest": "^7.0.0"
+  }
 }
